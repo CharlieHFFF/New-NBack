@@ -9,7 +9,10 @@ export function createTimeline(jsPsych: JsPsych,
   fixation_duration: number = 500,              // Default fixation duration in ms
   n: number = 2,                                // Default value for N-back level
   num_trials: number = 20,                      // Default number of trials
-  rep_ratio: number = 0.2) {
+  rep_ratio: number = 0.2, 
+  debrief: boolean = false, 
+  return_accuracy: boolean = false, 
+  data_output: "none" | "json" | "csv" = "none") {
 
   const trial_sequence: any[] = [];
 
@@ -49,6 +52,54 @@ export function createTimeline(jsPsych: JsPsych,
       }
     })
   }
+
+  if (debrief){
+  if (return_accuracy){
+    timeline.push(
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function(){
+          var correct_responses = jsPsych.data.get().filter({correct_response: true}).count();
+          var correct_no_responses = jsPsych.data.get().filter({correct_no_response: true}).count();
+          var total_trials = jsPsych.data.get().count();
+          var accuracy = Math.round(((correct_responses + correct_no_responses) / total_trials) * 100);
+          return `<p>Thank you for participating!</p>
+            <p>You correctly responded to <strong>${correct_responses}</strong> matching trials.</p>
+            <p>You correctly not responded to <strong>${correct_no_responses}</strong> non-matching trials.</p>
+            <p>Your accuracy was <strong>${accuracy}%</strong>.</p>
+            <p>Press any key to finish the experiment.</p>`;
+        },
+        choices: "NO_KEYS",
+        on_start: function () {
+          if (data_output == "csv"){
+          jsPsych.data.get().localSave('csv', `n_back.csv`);} else if (data_output == "json") {
+            jsPsych.data.get().localSave('json', `n_back.json`);
+          }
+        },
+        simulation_options: {
+          simulate: false
+        }
+      })
+  } else {
+    timeline.push(
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function(){
+          return `<p>Thank you for participating!</p>
+            <p>Press any key to finish the experiment.</p>`;
+        },
+        choices: "NO_KEYS",
+        on_start: function () {
+          if (data_output == "csv"){
+            jsPsych.data.get().localSave('csv', `n_back.csv`);} else if (data_output == "json") {
+              jsPsych.data.get().localSave('json', `n_back.json`);
+            }
+        },
+        simulation_options: {
+          simulate: false
+        }
+      })
+  }}
 
   return timeline
 }
